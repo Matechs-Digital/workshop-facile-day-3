@@ -76,7 +76,7 @@ it("check integers", () => {
   expect(x).toEqual(O.some(0));
   expect(y).toEqual(O.none);
 });
-it("add integers", () => {
+it("check user ids", () => {
   expect(E.tuple(UserId.newId(1), UserId.newId(1.3))).toEqual(
     E.left(new Int.NotAnInteger(1.3))
   );
