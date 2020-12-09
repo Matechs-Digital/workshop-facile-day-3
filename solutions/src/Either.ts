@@ -10,6 +10,14 @@ export interface Right<A> {
 
 export type Either<E, A> = Left<E> | Right<A>;
 
+export type EOfEither<B> = [B] extends [Either<infer _E, infer _A>]
+  ? _E
+  : never;
+
+export type AOfEither<B> = [B] extends [Either<infer _E, infer _A>]
+  ? _A
+  : never;
+
 export function left<E>(e: E): Either<E, never> {
   return {
     _tag: "Left",
@@ -67,4 +75,54 @@ export function catchAll<E, E1, B>(
 
     return self;
   };
+}
+
+export function tuple<X extends readonly Either<any, any>[]>(
+  ...params: X & { readonly 0: Either<any, any> }
+): Either<
+  EOfEither<X[number]>,
+  Readonly<
+    {
+      [k in keyof X]: AOfEither<X[k]>;
+    }
+  >
+>;
+export function tuple(
+  ...params: readonly Either<any, any>[]
+): Either<any, any> {
+  let res: any[] = [];
+  for (const o of params) {
+    if (o._tag === "Left") {
+      return o;
+    }
+    res.push(o.right);
+  }
+  return right(res);
+}
+
+export type NonEmptyArray<A> = readonly A[] & { readonly 0: A };
+
+export function tupleValidation<X extends readonly Either<any, any>[]>(
+  ...params: X & { readonly 0: Either<any, any> }
+): Either<
+  NonEmptyArray<EOfEither<X[number]>>,
+  Readonly<
+    {
+      [k in keyof X]: AOfEither<X[k]>;
+    }
+  >
+>;
+export function tupleValidation(
+  ...params: readonly Either<any, any>[]
+): Either<any, any> {
+  let res: any[] = [];
+  let errs: any[] = [];
+  for (const o of params) {
+    if (o._tag === "Left") {
+      errs.push(o.left);
+    } else {
+      res.push(o.right);
+    }
+  }
+  return errs.length > 0 ? left(errs) : right(res);
 }
