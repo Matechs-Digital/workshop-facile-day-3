@@ -1,8 +1,8 @@
-import * as O from "@app/Option";
 import * as E from "@app/Either";
-import * as R from "@app/Reader";
 import * as Int from "@app/Int";
-import { pipe } from "@app/Function";
+import * as UserId from "@app/UserId";
+import * as O from "@app/Option";
+import * as R from "@app/Reader";
 
 it("tuple option - some", () => {
   const x = O.tuple(O.some(0), O.some(1), O.some(2));
@@ -72,19 +72,18 @@ it("tuple reader", () => {
 it("check integers", () => {
   const x = Int.prismInt.getOption(0);
   const y = Int.prismInt.getOption(1.3);
+
   expect(x).toEqual(O.some(0));
   expect(y).toEqual(O.none);
 });
 it("add integers", () => {
-  const res = pipe(
-    O.tuple(Int.wrap(0), Int.wrap(1.3)),
-    O.map(([x, y]) => Int.add(x, y))
-  );
-  const res2 = pipe(
-    O.tuple(Int.wrap(0), Int.wrap(1)),
-    O.map(([x, y]) => Int.add(x, y))
+  expect(E.tuple(UserId.newId(1), UserId.newId(1.3))).toEqual(
+    E.left(new Int.NotAnInteger(1.3))
   );
 
-  expect(res).toEqual(O.none);
-  expect(res2).toEqual(O.some(1));
+  expect(E.tuple(UserId.newId(1), UserId.newId(0))).toEqual(
+    E.left(new UserId.NotPositive(Int.isoInt.get(0)))
+  );
 });
+
+// ENABLE RECORDING
