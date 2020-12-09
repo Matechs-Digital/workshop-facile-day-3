@@ -14,21 +14,20 @@ export function access<R, A>(f: (_: R) => A): Reader<R, A> {
 export function accessM<R, R0, A>(
   f: (_: R) => Reader<R0, A>
 ): Reader<R & R0, A> {
-  return chainReader(access(f), (x) => x);
+  return chain(access(f), (x) => x);
 }
 
 export function of<A>(a: A): Reader<unknown, A> {
   return () => a;
 }
 
-export function mapReader<R, A, B>(
-  self: Reader<R, A>,
+export function map<A, B>(
   f: (a: A) => B
-): Reader<R, B> {
-  return (r) => f(self(r));
+): <R>(self: Reader<R, A>) => Reader<R, B> {
+  return (self) => (r) => f(self(r));
 }
 
-export function chainReader<R, R0, A, B>(
+export function chain<R, R0, A, B>(
   self: Reader<R, A>,
   f: (a: A) => Reader<R0, B>
 ): Reader<R & R0, B> {
