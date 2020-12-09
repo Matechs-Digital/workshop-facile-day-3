@@ -1,46 +1,54 @@
-import * as O from "@app/Option";
+import * as E from "fp-ts/Either";
+import * as t from "io-ts";
+import { DateFromISOString } from "io-ts-types/DateFromISOString";
+import { failure } from "io-ts/PathReporter";
 
-export interface Newtype<URI, A> {
-  _URI: URI;
-  _A: A;
-}
+type NonEmptyString = t.Branded<
+  string,
+  { readonly NonEmptyString: unique symbol }
+>;
 
-export interface Iso<A, B> {
-  get: (a: A) => B;
-  reverseGet: (a: B) => A;
-}
+const NonEmptyString = t.brand(
+  t.string,
+  (s): s is NonEmptyString => s.length > 0,
+  "NonEmptyString"
+);
 
-export interface Prism<A, B> {
-  getOption: (a: A) => O.Option<B>;
-  reverseGet: (a: B) => A;
-}
+type NonEmptyStringArray = t.Branded<
+  string[],
+  { readonly NonEmptyStringArray: unique symbol }
+>;
 
-export function newtypeIso<N extends Newtype<any, any>>(): Iso<N["_A"], N> {
-  return {
-    get: (x) => x,
-    reverseGet: (x) => x,
-  };
-}
+const NonEmptyStringArray = t.brand(
+  t.array(t.string),
+  (s): s is NonEmptyStringArray => s.length > 0,
+  "NonEmptyStringArray"
+);
 
-export function newtypePrism<N extends Newtype<any, any>>(
-  predicate: (a: N["_A"]) => boolean
-): Prism<N["_A"], N> {
-  return {
-    getOption: (a) => (predicate(a) ? O.some(a) : O.none),
-    reverseGet: (x) => x,
-  };
-}
+const Person = t.intersection([
+  t.type({
+    firstName: NonEmptyString,
+    lastName: t.string,
+    createdAt: DateFromISOString,
+  }),
+  t.partial({
+    middleName: t.string,
+  }),
+]);
 
-export interface UserId extends Newtype<"UserId", string> {}
+export interface Person extends t.TypeOf<typeof Person> {}
 
-export const isoUserId = newtypeIso<UserId>();
+const x: E.Either<t.Errors, Person> = Person.decode({
+  firstName: "Michael",
+  lastName: "Arnaldi",
+  middleName: "ssss",
+  createdAt: "2020-12-09T16:35:05.942Z",
+});
 
-export interface Int extends Newtype<"Int", number> {}
+if (E.isLeft(x)) {
+  console.log(failure(x.left));
+} else {
+  x.right;
 
-const isoInt = newtypeIso<Int>();
-
-export const prismInt = newtypePrism<Int>((n) => Number.isInteger(n));
-
-export function add(x: Int, y: Int): Int {
-  return isoInt.get(isoInt.reverseGet(x) + isoInt.reverseGet(y));
+  console.log(Person.encode(x.right));
 }
